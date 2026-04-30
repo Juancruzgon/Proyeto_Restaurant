@@ -4,7 +4,10 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from datetime import datetime, timedelta
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
@@ -28,3 +31,4 @@ def verificar_token(token: str) -> dict:
         return payload
     except JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
+
