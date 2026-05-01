@@ -52,6 +52,21 @@ def eliminar_pedido(pedido_id: int, session: Session = Depends(get_session), cur
 def cambiar_estado_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
     return crud.cambiar_estado_pedido(pedido_id, session)
 
+@app.post("/pedidos/{pedido_id}/detalle")
+def agregar_detalle_pedido(pedido_id: int, detalle: schemas.DetallePedidoCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.detalle_pedido(pedido_id, detalle, session)
+
+@app.get("/pedidos/{pedido_id}/detalle")
+def mostrar_detalle_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.mostrar_detalle_pedido(pedido_id, session)
+
+@app.delete("/pedidos/{pedido_id}/detalle/{detalle_id}")
+def eliminar_producto_pedido(pedido_id: int, detalle_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.eliminar_producto_pedido(detalle_id, session)
+
+@app.put("/pedidos/{pedido_id}/detalle/{detalle_id}")
+def modificar_cantidad_pedido(pedido_id: int, detalle_id: int, cantidad: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.modificar_cantidad_pedido(detalle_id, cantidad, session)
 
 #Endopoints Productos
 

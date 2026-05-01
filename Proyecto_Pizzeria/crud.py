@@ -1,6 +1,6 @@
 from datetime import date
 from sqlmodel import Session, select
-from models import Pedido, Producto, EstadoPedido, Usuario, Rol, Mesa, CategoriaProducto, CategoriaGasto, Gasto, Insumo
+from models import Pedido, Producto, EstadoPedido, Usuario, Rol, Mesa, CategoriaProducto, CategoriaGasto, Gasto, Insumo, DetallePedido
 import schemas
 from fastapi import HTTPException
 from auth import hashear_password
@@ -108,6 +108,63 @@ def cambiar_estado_pedido(pedido_id: int, session: Session):
     session.commit()
     session.refresh(pedido_existente)
     return pedido_existente
+
+def detalle_pedido(pedido_id: int, detalle: schemas.DetallePedidoCreate, session: Session):
+    pedido_existente = session.exec(select(Pedido).where(Pedido.id == pedido_id)).first()
+    if not pedido_existente:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    producto = session.exec(select(Producto).where(Producto.id == detalle.producto_id)).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    nuevo_detalle = DetallePedido(
+    pedido_id=pedido_id,
+    producto_id=detalle.producto_id,
+    cantidad=detalle.cantidad,
+    precio_unitario=producto.precio,
+    subtotal=producto.precio * detalle.cantidad
+)
+    pedido_existente.total += nuevo_detalle.subtotal
+    session.add(pedido_existente)
+    session.add(nuevo_detalle)
+    session.commit()
+    session.refresh(nuevo_detalle)
+    return nuevo_detalle
+
+def mostrar_detalle_pedido(pedido_id: int, session: Session):
+    if not session.exec(select(Pedido).where(Pedido.id == pedido_id)).first():
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    detalles = session.exec(select(DetallePedido).where(DetallePedido.pedido_id == pedido_id)).all()
+    return detalles
+
+def eliminar_producto_pedido(detalle_id: int, session: Session):
+    detalle_existente = session.exec(select(DetallePedido).where(DetallePedido.id == detalle_id)).first()
+    if not detalle_existente:
+        raise HTTPException(status_code=404, detail="Detalle de pedido no encontrado")
+    pedido_existente = session.exec(select(Pedido).where(Pedido.id == detalle_existente.pedido_id)).first()
+    if not pedido_existente:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    pedido_existente.total -= detalle_existente.subtotal
+    session.add(pedido_existente)
+    session.delete(detalle_existente)
+    session.commit()
+    return {"detail": "Producto eliminado del pedido"}
+
+def modificar_cantidad_pedido(detalle_id: int, cantidad: int, session: Session):
+    detalle_existente = session.exec(select(DetallePedido).where(DetallePedido.id == detalle_id)).first()
+    if not detalle_existente:
+        raise HTTPException(status_code=404, detail="Detalle de pedido no encontrado")
+    pedido_existente = session.exec(select(Pedido).where(Pedido.id == detalle_existente.pedido_id)).first()
+    if not pedido_existente:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    pedido_existente.total -= detalle_existente.subtotal
+    detalle_existente.cantidad = cantidad
+    detalle_existente.subtotal = detalle_existente.precio_unitario * cantidad
+    pedido_existente.total += detalle_existente.subtotal
+    session.add(pedido_existente)
+    session.add(detalle_existente)
+    session.commit()
+    session.refresh(detalle_existente)
+    return detalle_existente
 
 #CRUD USUARIO
 

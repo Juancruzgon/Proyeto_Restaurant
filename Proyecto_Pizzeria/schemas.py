@@ -35,6 +35,11 @@ class PedidoModify(pydantic.BaseModel):
     mesa_id: Optional[int] = None
     usuario_id: Optional[int] = None
 
+class DetallePedidoCreate(pydantic.BaseModel):
+    producto_id: int
+    cantidad: int
+
+
 #Usuarios
 
 class UsuarioCreate(pydantic.BaseModel):
