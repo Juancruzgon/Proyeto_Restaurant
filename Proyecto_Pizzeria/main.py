@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException
 from database import get_session
 from sqlmodel import Session, select
@@ -9,6 +10,7 @@ import crud
 from websocket_manager import manager
 from fastapi import WebSocket
 import json
+from prynter import imprimir_comanda
 
 app = FastAPI()
 
@@ -57,6 +59,8 @@ async def crear_pedido(pedido: schemas.PedidoCreate, session: Session = Depends(
         "pedido_id": resultado.id,
         "mesa_id": resultado.mesa_id
     }))
+    detalles = crud.mostrar_detalle_pedido(resultado.id, session)
+    imprimir_comanda(resultado, detalles, os.getenv("PRINTER_IP", "192.168.1.100"))
     return resultado
 
 @app.put("/pedidos/{pedido_id}")
