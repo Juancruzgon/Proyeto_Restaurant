@@ -29,7 +29,7 @@ class Pedido(SQLModel, table=True):
     total: Decimal = Field(default=0, max_digits=10, decimal_places=2)
     fecha: date = Field(default_factory=date.today)
     hora: time = Field(default_factory=lambda: datetime.now().time())
-
+    activo: bool = Field(default=True)
 
 class DetallePedido(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -67,6 +67,7 @@ class Producto(SQLModel, table=True):
     descripcion : Optional[str] = None
     precio: Decimal = Field(max_digits=10, decimal_places=2)
     categoria_id: int = Field(foreign_key="categoriaproducto.id")
+    activo: bool = Field(default=True)
 
 
 class Rol(SQLModel, table=True):
