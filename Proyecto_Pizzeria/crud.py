@@ -5,6 +5,14 @@ import schemas
 from fastapi import HTTPException
 from auth import hashear_password
 
+
+TRANSICIONES_VALIDAS = {
+    1: 2,  # Creado → En preparación
+    2: 3,  # En preparación → Listo
+    3: 4,  # Listo → Pagado
+}
+
+
 #CRUD DE PRODUCTOS
 
 def obtener_productos(session: Session):
@@ -53,9 +61,13 @@ def crear_pedido(pedido: schemas.PedidoCreate, session: Session):
         .where(Pedido.fecha == date.today())
         .order_by(Pedido.nro_pedido.desc())
     ).first()
-
     nro_pedido = (ultimo_pedido.nro_pedido + 1) if ultimo_pedido else 1
     nuevo_pedido = Pedido(**pedido.model_dump(), estado_id=1, nro_pedido=nro_pedido)  # Asignar estado "Pendiente" por defecto
+    if pedido.mesa_id:
+        mesa = session.exec(select(Mesa).where(Mesa.id == pedido.mesa_id)).first()
+        if not mesa:
+            raise HTTPException(status_code=404, detail="Mesa no encontrada")
+        mesa.estado_id = 2  # Cambiar estado de la mesa a "Ocupada"
     session.add(nuevo_pedido)
     session.commit()
     session.refresh(nuevo_pedido)
@@ -79,6 +91,23 @@ def eliminar_pedido(pedido_id: int, session: Session):
     pedido_existente.activo = False
     session.commit()
     return {"detail": "Pedido eliminado"}
+
+def cambiar_estado_pedido(pedido_id: int, session: Session):
+    pedido_existente = session.exec(select(Pedido).where(Pedido.id == pedido_id)).first()
+    if not pedido_existente:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    siguiente_estado = TRANSICIONES_VALIDAS.get(pedido_existente.estado_id)
+    if not siguiente_estado:
+        raise HTTPException(status_code=400, detail="No existen mas estados")
+    else:
+        pedido_existente.estado_id = siguiente_estado
+    mesa = session.exec(select(Mesa).where(Mesa.id == pedido_existente.mesa_id)).first()
+    if siguiente_estado == 4 and pedido_existente.mesa_id:
+        mesa.estado_id = 1
+    session.add(pedido_existente)
+    session.commit()
+    session.refresh(pedido_existente)
+    return pedido_existente
 
 #CRUD USUARIO
 

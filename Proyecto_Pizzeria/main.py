@@ -48,6 +48,10 @@ def modificar_pedido(pedido_id: int, pedido: schemas.PedidoModify, session: Sess
 def eliminar_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
     return crud.eliminar_pedido(pedido_id, session)
 
+@app.put("/pedidos/{pedido_id}/estado")
+def cambiar_estado_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.cambiar_estado_pedido(pedido_id, session)
+
 
 #Endopoints Productos
 
