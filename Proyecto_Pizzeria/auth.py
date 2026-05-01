@@ -6,6 +6,9 @@ load_dotenv()
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
+from sqlmodel import Session, select
+from models import Usuario
+from database import get_session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
@@ -32,3 +35,12 @@ def verificar_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
+def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)) -> Usuario:
+    payload = verificar_token(token)
+    email = payload.get("sub")
+    usuario = session.exec(select(Usuario).where(Usuario.email == email)).first()
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    if not usuario.activo:
+        raise HTTPException(status_code=403, detail="Usuario inactivo")
+    return usuario
