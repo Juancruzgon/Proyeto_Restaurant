@@ -67,6 +67,8 @@ def crear_pedido(pedido: schemas.PedidoCreate, session: Session):
         mesa = session.exec(select(Mesa).where(Mesa.id == pedido.mesa_id)).first()
         if not mesa:
             raise HTTPException(status_code=404, detail="Mesa no encontrada")
+        if mesa.estado_id != 1:
+            raise HTTPException(status_code=400, detail="La mesa ya está ocupada")
         mesa.estado_id = 2  # Cambiar estado de la mesa a "Ocupada"
     session.add(nuevo_pedido)
     session.commit()
@@ -89,8 +91,10 @@ def eliminar_pedido(pedido_id: int, session: Session):
     if not pedido_existente:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     pedido_existente.activo = False
+    session.add(pedido_existente)
     session.commit()
-    return {"detail": "Pedido eliminado"}
+    session.refresh(pedido_existente)
+    return pedido_existente
 
 def cambiar_estado_pedido(pedido_id: int, session: Session):
     pedido_existente = session.exec(select(Pedido).where(Pedido.id == pedido_id)).first()

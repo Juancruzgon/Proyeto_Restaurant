@@ -6,9 +6,20 @@ import schemas
 from auth import oauth2_scheme, verificar_token, verificar_password, crear_token
 from fastapi.security import OAuth2PasswordRequestForm 
 import crud
+from websocket_manager import manager
+from fastapi import WebSocket
+import json
 
 app = FastAPI()
 
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+    except:
+        manager.disconnect(websocket)
 
 def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)) -> Usuario:
     payload = verificar_token(token)
@@ -16,6 +27,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
     usuario = session.exec(select(Usuario).where(Usuario.email == email)).first()
     if not usuario:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    if not usuario.activo:
+        raise HTTPException(status_code=403, detail="Usuario inactivo")
     return usuario
 
 @app.post("/login")
@@ -37,36 +50,52 @@ def obtener_pedidos(session: Session = Depends(get_session), current_user: Usuar
     return crud.obtener_pedidos(session)
 
 @app.post("/pedidos/")
-def crear_pedido(pedido: schemas.PedidoCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.crear_pedido(pedido, session)
+async def crear_pedido(pedido: schemas.PedidoCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    resultado = crud.crear_pedido(pedido, session)
+    await manager.broadcast(json.dumps({
+        "evento": "nuevo_pedido", 
+        "pedido_id": resultado.id,
+        "mesa_id": resultado.mesa_id
+    }))
+    return resultado
 
 @app.put("/pedidos/{pedido_id}")
 def modificar_pedido(pedido_id: int, pedido: schemas.PedidoModify, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
     return crud.modificar_pedido(pedido_id, pedido, session)
 
 @app.delete("/pedidos/{pedido_id}")
-def eliminar_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.eliminar_pedido(pedido_id, session)
+async def eliminar_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    resultado = crud.eliminar_pedido(pedido_id, session)
+    await manager.broadcast(json.dumps({"evento": "eliminar_pedido", "pedido_id": pedido_id, "mesa_id": resultado.mesa_id}))
+    return resultado
 
 @app.put("/pedidos/{pedido_id}/estado")
-def cambiar_estado_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.cambiar_estado_pedido(pedido_id, session)
+async def cambiar_estado_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    resultado = crud.cambiar_estado_pedido(pedido_id, session)
+    await manager.broadcast(json.dumps({"evento": "estado_pedido", "pedido_id": pedido_id, "estado_id": resultado.estado_id}))
+    return resultado    
 
 @app.post("/pedidos/{pedido_id}/detalle")
-def agregar_detalle_pedido(pedido_id: int, detalle: schemas.DetallePedidoCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.detalle_pedido(pedido_id, detalle, session)
+async def agregar_detalle_pedido(pedido_id: int, detalle: schemas.DetallePedidoCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    resultado = crud.detalle_pedido(pedido_id, detalle, session)
+    await manager.broadcast(json.dumps({"evento": "detalle_agregado", "pedido_id": pedido_id, "producto_id": detalle.producto_id, "cantidad": detalle.cantidad}))
+    return resultado
 
 @app.get("/pedidos/{pedido_id}/detalle")
 def mostrar_detalle_pedido(pedido_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
     return crud.mostrar_detalle_pedido(pedido_id, session)
 
 @app.delete("/pedidos/{pedido_id}/detalle/{detalle_id}")
-def eliminar_producto_pedido(pedido_id: int, detalle_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.eliminar_producto_pedido(detalle_id, session)
+async def eliminar_producto_pedido(pedido_id: int, detalle_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    resultado = crud.eliminar_producto_pedido(detalle_id, session)
+    await manager.broadcast(json.dumps({"evento": "Producto_eliminado", "pedido_id": pedido_id, "detalle_id": detalle_id}))
+    return resultado
 
 @app.put("/pedidos/{pedido_id}/detalle/{detalle_id}")
-def modificar_cantidad_pedido(pedido_id: int, detalle_id: int, cantidad: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.modificar_cantidad_pedido(detalle_id, cantidad, session)
+async def modificar_cantidad_pedido(pedido_id: int, detalle_id: int, cantidad: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    resultado = crud.modificar_cantidad_pedido(detalle_id, cantidad, session)
+    await manager.broadcast(json.dumps({"evento": "Producto_modificado", "pedido_id": pedido_id, "detalle_id": detalle_id, "nueva_cantidad": cantidad}))
+    return resultado
 
 #Endopoints Productos
 
