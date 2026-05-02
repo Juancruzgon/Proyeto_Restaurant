@@ -1,8 +1,0 @@
-Curso python Backend FastAPI
-
-@app.get("/)
-async def
-
-estadnar que permite hablar mediante la redd --> HTTP
-
-Get --> Obtener x de x sitio
