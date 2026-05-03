@@ -3,12 +3,14 @@ from fastapi import FastAPI, Depends, HTTPException
 from database import get_session
 from sqlmodel import Session, select
 from models import Usuario
-from auth import oauth2_scheme, verificar_password, crear_token
+from auth import verificar_password, crear_token
 from fastapi.security import OAuth2PasswordRequestForm 
 from routers import pedido, rol
 from websocket_manager import manager
 from fastapi import WebSocket
 from routers import producto, usuario, mesa, categoria_producto, categoria_gasto, gasto, insumo
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 app.include_router(pedido.router)
 app.include_router(producto.router)
@@ -19,6 +21,15 @@ app.include_router(categoria_producto.router)
 app.include_router(categoria_gasto.router)
 app.include_router(gasto.router)
 app.include_router(insumo.router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -40,4 +51,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
 
     token = crear_token({"sub": usuario.email})
-    return {"access_token": token, "token_type": "bearer"}
+    return {
+        "access_token": token, 
+        "token_type": "bearer",
+        "rol_id": usuario.rol_id,
+        "nombre": usuario.nombre
+    }

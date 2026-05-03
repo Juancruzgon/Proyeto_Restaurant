@@ -48,8 +48,10 @@ def eliminar_producto(producto_id: int, session: Session):
 
 #CRUD DE PEDIDOS
 
-def obtener_pedidos(session: Session):
-    statement = select(Pedido)
+def obtener_pedidos(session: Session, mesa_id: int = None):
+    statement = select(Pedido).where(Pedido.activo == True)
+    if mesa_id:
+        statement = statement.where(Pedido.mesa_id == mesa_id)
     resultados = session.exec(statement)
     return resultados.all()
 
@@ -91,6 +93,11 @@ def eliminar_pedido(pedido_id: int, session: Session):
     if not pedido_existente:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     pedido_existente.activo = False
+    if pedido_existente.mesa_id:
+        mesa = session.exec(select(Mesa).where(Mesa.id == pedido_existente.mesa_id)).first()
+        if mesa:
+            mesa.estado_id = 1
+            session.add(mesa)
     session.add(pedido_existente)
     session.commit()
     session.refresh(pedido_existente)
@@ -107,6 +114,7 @@ def cambiar_estado_pedido(pedido_id: int, session: Session):
         pedido_existente.estado_id = siguiente_estado
     mesa = session.exec(select(Mesa).where(Mesa.id == pedido_existente.mesa_id)).first()
     if siguiente_estado == 4 and pedido_existente.mesa_id:
+        pedido_existente.activo = False
         mesa.estado_id = 1
     session.add(pedido_existente)
     session.commit()
@@ -178,18 +186,25 @@ def obtener_usuarios(session: Session):
     return resultados.all()
 
 def crear_usuario(usuario: schemas.UsuarioCreate, session: Session):
-    nuevo_usuario = Usuario(**usuario.model_dump(), password=hashear_password(usuario.password))
+    nuevo_usuario = Usuario(**usuario.model_dump(exclude={"password"}), password=hashear_password(usuario.password))
     session.add(nuevo_usuario)
     session.commit()
     session.refresh(nuevo_usuario)
     return nuevo_usuario
 
+
 def modificar_usuario(usuario_id: int, usuario: schemas.UsuarioModify, session: Session):
     usuario_existente = session.exec(select(Usuario).where(Usuario.id == usuario_id)).first()
     if not usuario_existente:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    for attr, value in usuario.model_dump(exclude_unset=True).items():
+    
+    datos = usuario.model_dump(exclude_unset=True)
+    if 'password' in datos:
+        datos['password'] = hashear_password(datos['password'])
+    
+    for attr, value in datos.items():
         setattr(usuario_existente, attr, value)
+    
     session.add(usuario_existente)
     session.commit()
     session.refresh(usuario_existente)

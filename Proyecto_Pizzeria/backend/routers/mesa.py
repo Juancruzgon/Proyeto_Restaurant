@@ -5,6 +5,8 @@ from models import Usuario
 from schemas.mesa import MesaCreate, MesaModify
 import crud
 from auth import get_current_user
+from websocket_manager import manager
+import json
 
 router = APIRouter(
     prefix="/mesas",
@@ -16,8 +18,10 @@ def obtener_mesas(session: Session = Depends(get_session), current_user: Usuario
     return crud.obtener_mesas(session)
 
 @router.post("/")
-def crear_mesa(mesa: MesaCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.crear_mesa(mesa, session)
+async def crear_mesa(mesa: MesaCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    resultado = crud.crear_mesa(mesa, session)
+    await manager.broadcast(json.dumps({"evento": "nueva_mesa", "mesa_id": resultado.id}))
+    return resultado
 
 @router.put("/{mesa_id}")
 def modificar_mesa(mesa_id: int, mesa: MesaModify, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):

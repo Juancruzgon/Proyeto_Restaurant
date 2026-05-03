@@ -7,6 +7,6 @@ class MesaCreate(pydantic.BaseModel):
     capacidad: int
 
 class MesaModify(pydantic.BaseModel):
-    numero: Optional[int] = None
+    #numero: Optional[int] = None
     capacidad: Optional[int] = None
     estado_id: Optional[int] = None
