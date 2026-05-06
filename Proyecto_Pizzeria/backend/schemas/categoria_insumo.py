@@ -2,12 +2,15 @@ import pydantic
 from typing import Optional
 from decimal import Decimal
 
-class CategoriaProductoCreate(pydantic.BaseModel):
+
+class CategoriaInsumoCreate(pydantic.BaseModel):
     nombre: str
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
+    
 
-class CategoriaProductoModify(pydantic.BaseModel):
+class CategoriaInsumoUpdate(pydantic.BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
+

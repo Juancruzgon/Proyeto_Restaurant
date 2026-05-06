@@ -13,11 +13,19 @@ class EstadoMesa(SQLModel, table=True):
     nombre: str = Field(unique=True) # "Libre", "Ocupada", etc.
     descripcion: Optional[str] = None
 
+
+class Salon(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    nombre: str = Field(unique=True)
+    descripcion: Optional[str] = None
+
 class Mesa(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    nro_id: int = Field(unique=True, index=True)
+    nro_id: int = Field(index=True)  # ← sacá el unique=True
     estado_id: int = Field(foreign_key="estadomesa.id")
     capacidad: int
+    salon_id: Optional[int] = Field(default=None, foreign_key="salon.id")
+    activo: bool = Field(default=True)
 
 class Pedido(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -39,12 +47,22 @@ class DetallePedido(SQLModel, table=True):
     precio_unitario: Decimal = Field(max_digits=10, decimal_places=2)
     subtotal: Decimal = Field(max_digits=10, decimal_places=2)
 
+
+class CategoriaInsumo(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    nombre: str = Field(unique=False)
+    descripcion: Optional[str] = None
+    parent_id: Optional[int] = Field(default=None, foreign_key="categoriainsumo.id")
+
+
 class Insumo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nro_insumo :int = Field(index=True)
     nombre: str = Field(unique=True, index=True)
+    stock_actual: int
     descripcion: Optional[str] = None
     precio: Decimal = Field(max_digits=10, decimal_places=2)
+    categoria_id: int = Field(foreign_key="categoriainsumo.id")
 
 
 class MovimientoStock(SQLModel, table=True):
@@ -57,17 +75,17 @@ class MovimientoStock(SQLModel, table=True):
 
 class CategoriaProducto(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    nombre: str = Field(unique=True)
-    descripcion: Optional[str] = None
-
+    nombre: str = Field(unique=False)
+    parent_id: Optional[int] = Field(default=None, foreign_key="categoriaproducto.id")
 
 class Producto(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(unique=True, index=True)
     descripcion : Optional[str] = None
     precio: Decimal = Field(max_digits=10, decimal_places=2)
-    categoria_id: int = Field(foreign_key="categoriaproducto.id")
+    categoria_id: int = Field(foreign_key="categoriaProducto.id")
     activo: bool = Field(default=True)
+    descuento: Optional[int] = None
 
 
 class Rol(SQLModel, table=True):
@@ -110,6 +128,8 @@ class GestorImpresora(SQLModel, table=True):
     puerto: int
     ip: str
     tipo: str
+
+
 
 #class Proveedor(SQLModel, table=true):
 

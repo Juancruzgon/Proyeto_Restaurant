@@ -21,7 +21,7 @@ function Dashboard() {
 
       {rolId === '1' && (
         <>
-          <button onClick={() => navigate('/productos')}>Productos</button>
+          <button onClick={() => navigate('/productos')}>Administrar Productos</button>
           <button onClick={() => navigate('/usuarios')}>Usuarios</button>
           <button onClick={() => navigate('/gastos')}>Gastos</button>
           <button onClick={() => navigate('/insumos')}>Insumos</button>

@@ -1,6 +1,6 @@
 from datetime import date
-from sqlmodel import Session, select
-from models import Pedido, Producto, EstadoPedido, Usuario, Rol, Mesa, CategoriaProducto, CategoriaGasto, Gasto, Insumo, DetallePedido
+from sqlmodel import Session, select, col
+from models import Pedido, Producto, EstadoPedido, Salon, Usuario, Rol, Mesa, CategoriaProducto, CategoriaGasto, Gasto, Insumo, DetallePedido
 import schemas
 from fastapi import HTTPException
 from auth import hashear_password
@@ -15,8 +15,10 @@ TRANSICIONES_VALIDAS = {
 
 #CRUD DE PRODUCTOS
 
-def obtener_productos(session: Session):
+def obtener_productos(session: Session, categoria_id: int = None):
     statement = select(Producto).where(Producto.activo == True)
+    if categoria_id:
+        statement = statement.where(Producto.categoria_id == categoria_id)
     resultados = session.exec(statement)
     return resultados.all()
 
@@ -254,10 +256,11 @@ def eliminar_rol(rol_id: int, session: Session):
 
 #CRUD MESAS
 
-def obtener_mesas(session: Session):
-    statement = select(Mesa)
-    resultados = session.exec(statement)
-    return resultados.all()
+def obtener_mesas(session: Session, salon_id: int = None):
+    statement = select(Mesa).where(col(Mesa.activo) == True)
+    if salon_id:
+        statement = statement.where(col(Mesa.salon_id) == salon_id)
+    return session.exec(statement).all()
 
 def crear_mesa(mesa: schemas.MesaCreate, session: Session):
     nueva_mesa = Mesa(**mesa.model_dump(), estado_id=1)  # Asignar estado "Disponible" por defecto
@@ -319,6 +322,12 @@ def eliminar_categoria_producto(categoria_id: int, session: Session):
     session.commit()
     return {"detail": "Categoría eliminada"}
 
+def obtener_categorias_por_nivel(session: Session, parent_id: int = None):
+    if parent_id is None:
+        statement = select(CategoriaProducto).where(CategoriaProducto.parent_id == None)
+    else:
+        statement = select(CategoriaProducto).where(CategoriaProducto.parent_id == parent_id)
+    return session.exec(statement).all()
 
 #CRUD CATEGORIA GASTOS
 
@@ -420,3 +429,34 @@ def eliminar_insumo(insumo_id: int, session: Session):
     session.delete(insumo_existente)
     session.commit()
     return {"detail": "Insumo eliminado"}
+
+# CRUD SALONES
+
+def obtener_salon(session: Session):
+    return session.exec(select(Salon)).all()
+
+def crear_salon(salon: schemas.SalonCreate, session: Session):
+    nuevo_salon = Salon(**salon.model_dump())
+    session.add(nuevo_salon)
+    session.commit()
+    session.refresh(nuevo_salon)
+    return nuevo_salon
+
+def modificar_salon(salon_id: int, salon: schemas.SalonModify, session: Session):
+    salon_existente = session.exec(select(Salon).where(Salon.id == salon_id)).first()
+    if not salon_existente:
+        raise HTTPException(status_code=404, detail="Salón no encontrado")
+    for attr, value in salon.model_dump(exclude_unset=True).items():
+        setattr(salon_existente, attr, value)
+    session.add(salon_existente)
+    session.commit()
+    session.refresh(salon_existente)
+    return salon_existente
+
+def eliminar_salon(salon_id: int, session: Session):
+    salon_existente = session.exec(select(Salon).where(Salon.id == salon_id)).first()
+    if not salon_existente:
+        raise HTTPException(status_code=404, detail="Salón no encontrado")
+    session.delete(salon_existente)
+    session.commit()
+    return {"detail": "Salón eliminado"}

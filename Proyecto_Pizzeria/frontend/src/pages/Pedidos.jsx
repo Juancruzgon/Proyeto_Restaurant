@@ -19,6 +19,7 @@ function Pedidos() {
 
   return (
     <div>
+      <button onClick={() => navigate(-1)}>← Volver</button>
       <h1>Pedidos</h1>
       <button onClick={() => navigate('/nuevo-pedido')}>Nuevo Pedido</button>
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from database import get_session
-from models import Usuario
+from models import Usuario, Producto
 from schemas.producto import ProductoCreate, ProductoModify
 import crud
 from auth import get_current_user
@@ -11,8 +11,15 @@ router = APIRouter(
     tags=["productos"]
 )
 @router.get("/")
-def obtener_productos(session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.obtener_productos(session)
+def obtener_productos(categoria_id: int = None, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.obtener_productos(session, categoria_id)
+
+@router.get("/{producto_id}")
+def obtener_producto(producto_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    producto = session.get(Producto, producto_id)
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto
 
 @router.post("/")
 def crear_producto(producto: ProductoCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):

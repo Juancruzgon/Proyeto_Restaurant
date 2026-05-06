@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from routers import pedido, rol
 from websocket_manager import manager
 from fastapi import WebSocket
-from routers import producto, usuario, mesa, categoria_producto, categoria_gasto, gasto, insumo
+from routers import producto, usuario, mesa, categoria_producto, categoria_gasto, gasto, insumo, salon
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -21,6 +21,7 @@ app.include_router(categoria_producto.router)
 app.include_router(categoria_gasto.router)
 app.include_router(gasto.router)
 app.include_router(insumo.router)
+app.include_router(salon.router)
 
 app.add_middleware(
     CORSMiddleware,

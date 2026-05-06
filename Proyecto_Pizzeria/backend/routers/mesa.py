@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from database import get_session
-from models import Usuario
+from models import Usuario, Mesa
 from schemas.mesa import MesaCreate, MesaModify
 import crud
 from auth import get_current_user
@@ -14,8 +14,15 @@ router = APIRouter(
 )
 
 @router.get("/")
-def obtener_mesas(session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
-    return crud.obtener_mesas(session)
+def obtener_mesas(salon_id: int = None, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.obtener_mesas(session, salon_id)
+
+@router.get("/{mesa_id}")
+def obtener_mesa(mesa_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    mesa = session.get(Mesa, mesa_id)
+    if not mesa:
+        raise HTTPException(status_code=404, detail="Mesa no encontrada")
+    return mesa
 
 @router.post("/")
 async def crear_mesa(mesa: MesaCreate, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
