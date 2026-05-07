@@ -27,3 +27,11 @@ def modificar_insumo(insumo_id: int, insumo: InsumoModify, session: Session = De
 @router.delete("/{insumo_id}")
 def eliminar_insumo(insumo_id: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
     return crud.eliminar_insumo(insumo_id, session)
+
+@router.get("/")
+def obtener_insumos(categoria_id: int = None, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.obtener_insumos(session, categoria_id)
+
+@router.post("/{insumo_id}/compra")
+def agregar_compra(insumo_id: int, cantidad: int, session: Session = Depends(get_session), current_user: Usuario = Depends(get_current_user)):
+    return crud.agregar_compra(insumo_id, cantidad, session)

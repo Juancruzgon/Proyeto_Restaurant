@@ -50,7 +50,7 @@ class DetallePedido(SQLModel, table=True):
 
 class CategoriaInsumo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    nombre: str = Field(unique=False)
+    nombre: str
     descripcion: Optional[str] = None
     parent_id: Optional[int] = Field(default=None, foreign_key="categoriainsumo.id")
 
@@ -129,6 +129,20 @@ class GestorImpresora(SQLModel, table=True):
     ip: str
     tipo: str
 
+class Promocion(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    nombre: str
+    descripcion: Optional[str] = None
+    precio: Decimal = Field(max_digits=10, decimal_places=2)
+    valida_desde: Optional[datetime] = None
+    valida_hasta: Optional[datetime] = None
+    activo: bool = Field(default=True)
+
+class PromocionProducto(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    promocion_id: int = Field(foreign_key="promocion.id")
+    producto_id: int = Field(foreign_key="producto.id")
+    cantidad: int = Field(default=1)
 
 
 #class Proveedor(SQLModel, table=true):

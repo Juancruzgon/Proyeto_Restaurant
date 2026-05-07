@@ -5,10 +5,9 @@ from sqlmodel import Session, select
 from models import Usuario
 from auth import verificar_password, crear_token
 from fastapi.security import OAuth2PasswordRequestForm 
-from routers import pedido, rol
 from websocket_manager import manager
 from fastapi import WebSocket
-from routers import producto, usuario, mesa, categoria_producto, categoria_gasto, gasto, insumo, salon
+from routers import producto, usuario, mesa, categoria_producto, categoria_gasto, gasto, insumo, salon, categoria_insumo, insumo, pedido, rol, promocion
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -22,6 +21,9 @@ app.include_router(categoria_gasto.router)
 app.include_router(gasto.router)
 app.include_router(insumo.router)
 app.include_router(salon.router)
+app.include_router(categoria_insumo.router)
+app.include_router(insumo.router)
+app.include_router(promocion.router)
 
 app.add_middleware(
     CORSMiddleware,

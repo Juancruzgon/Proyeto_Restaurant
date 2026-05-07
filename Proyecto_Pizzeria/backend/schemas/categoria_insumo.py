@@ -9,7 +9,7 @@ class CategoriaInsumoCreate(pydantic.BaseModel):
     parent_id: Optional[int] = None
     
 
-class CategoriaInsumoUpdate(pydantic.BaseModel):
+class CategoriaInsumoModify(pydantic.BaseModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     parent_id: Optional[int] = None
